@@ -1,11 +1,46 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <script>
+      AFRAME.registerComponent("auto-center", {
+        init: function () {
+          this.el.addEventListener("model-loaded", () => {
+            const mesh = this.el.getObject3D("mesh");
+            if (!mesh) return;
+
+            // Fix rotation Z-up → Y-up
+            mesh.rotation.x = -Math.PI / 2;
+
+            // Compute bounding box
+            const box = new THREE.Box3().setFromObject(mesh);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            // Center model
+            mesh.position.sub(center);
+
+            // Normalize scale (biar gak kegedean/kekecilan)
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1 / maxDim;
+            mesh.scale.setScalar(scale * 0.8); // 0.8 biar ada padding dikit
+          });
+        },
+      });
+    </script>
   </head>
+
   <body>
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
       <a-assets>
         <a-asset-item id="myModel" src="./model.glb"></a-asset-item>
       </a-assets>
@@ -13,7 +48,10 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-gltf-model src="#myModel" rotation="0 0 0" position="0 0 0" scale="0.6 0.6 0.6"></a-gltf-model>
+        <a-gltf-model
+          src="#myModel"
+          auto-center
+        ></a-gltf-model>
       </a-entity>
     </a-scene>
   </body>
